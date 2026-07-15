@@ -696,7 +696,8 @@ export function NaviMap({ mapboxToken, tilesetUrl = "" }: { mapboxToken: string;
   const [route, setRoute] = useState<NavRoute | null>(null);
   const [driving, setDriving] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
-  const [navReady, setNavReady] = useState(false);
+  const [navBuilding, setNavBuilding] = useState(false);
+  const buildingRef = useRef(false);
   const [voiceOn, setVoiceOn] = useState(true);
   const [navHint, setNavHint] = useState("Tap the map to set your start point");
   const [driveInfo, setDriveInfo] = useState<{ toNext: number; remaining: number } | null>(null);
@@ -792,26 +793,54 @@ export function NaviMap({ mapboxToken, tilesetUrl = "" }: { mapboxToken: string;
     };
   }, [mapboxToken, tilesetUrl]);
 
-  // Build the routing graph from the road network once (Mapbox mode only).
-  useEffect(() => {
-    if (!mapboxToken) return;
-    let active = true;
-    fetch(FEATURES_URL)
-      .then((r) => r.json())
-      .then((data) => {
-        if (!active) return;
-        try {
-          graphRef.current = buildRouteGraph(data as never);
-          setNavReady(true);
-        } catch (error) {
-          console.error("NaviJSON nav: routing graph failed to build.", error);
-        }
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, [mapboxToken]);
+  // Build the routing graph LAZILY, on first routing action. Fetching +
+  // building a 100k-feature graph on page load blocks the main thread and janks
+  // the map; deferring it keeps the initial map responsive. Cached after build;
+  // the features fetch hits the browser cache (Mapbox already loaded the same
+  // URL), so the cost is just the graph construction.
+  const ensureGraph = useCallback(async (): Promise<RouteGraph | null> => {
+    if (graphRef.current) return graphRef.current;
+    if (buildingRef.current) return null;
+    buildingRef.current = true;
+    setNavBuilding(true);
+    try {
+      const data = await fetch(FEATURES_URL).then((r) => r.json());
+      graphRef.current = buildRouteGraph(data as never);
+      return graphRef.current;
+    } catch (error) {
+      console.error("NaviJSON nav: routing graph failed to build.", error);
+      return null;
+    } finally {
+      buildingRef.current = false;
+      setNavBuilding(false);
+    }
+  }, []);
+
+  // Entry point from the "Directions" button: drop the start at the current map
+  // center and prompt for a destination tap.
+  const startDirections = useCallback(async () => {
+    const map = mapRef.current;
+    if (!map) return;
+    setDetailOpen(false);
+    setNavHint("Preparing directions…");
+    const graph = await ensureGraph();
+    if (!graph) {
+      setNavHint("Routing data unavailable.");
+      return;
+    }
+    const c = map.getCenter();
+    const start = snapToNetwork(graph, [c.lng, c.lat]) ?? [c.lng, c.lat];
+    startRef.current = start;
+    destRef.current = null;
+    routeRef.current = null;
+    spokenRef.current.clear();
+    setRoute(null);
+    setStepIndex(0);
+    setDriveInfo(null);
+    navSetRoute(map, []);
+    navSetEndpoints(map, start, null);
+    setNavHint("Tap the map to set your destination");
+  }, [ensureGraph]);
 
   const clearRoute = useCallback(() => {
     drivingRef.current = false;
@@ -905,9 +934,10 @@ export function NaviMap({ mapboxToken, tilesetUrl = "" }: { mapboxToken: string;
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapboxToken || !mapReady) return;
-    const onClick = (e: { lngLat: { lng: number; lat: number } }) => {
-      const graph = graphRef.current;
-      if (drivingRef.current || !graph) return;
+    const onClick = async (e: { lngLat: { lng: number; lat: number } }) => {
+      if (drivingRef.current) return;
+      const graph = graphRef.current ?? (await ensureGraph());
+      if (!graph) return;
       const pt: NavLngLat = [e.lngLat.lng, e.lngLat.lat];
       const snapped = snapToNetwork(graph, pt) ?? pt;
       if (!startRef.current || routeRef.current) {
@@ -939,7 +969,7 @@ export function NaviMap({ mapboxToken, tilesetUrl = "" }: { mapboxToken: string;
     return () => {
       map.off("click", onClick);
     };
-  }, [mapReady, mapboxToken]);
+  }, [mapReady, mapboxToken, ensureGraph]);
 
   // Stop any animation frame on unmount.
   useEffect(() => {
@@ -1007,7 +1037,7 @@ export function NaviMap({ mapboxToken, tilesetUrl = "" }: { mapboxToken: string;
         ))}
       </div>
 
-      {mapboxToken && navReady && (
+      {mapboxToken && (
         <div className={styles.nav} aria-live="polite">
           {driving && route ? (
             <>
@@ -1071,7 +1101,7 @@ export function NaviMap({ mapboxToken, tilesetUrl = "" }: { mapboxToken: string;
               </ol>
             </div>
           ) : (
-            <div className={styles.navHint}>{navHint}</div>
+            <div className={styles.navHint}>{navBuilding ? "Preparing directions…" : navHint}</div>
           )}
         </div>
       )}
@@ -1082,14 +1112,15 @@ export function NaviMap({ mapboxToken, tilesetUrl = "" }: { mapboxToken: string;
           <p className={styles.eyebrow}>Downtown San José + I-280/CA-87 interchange</p>
           <h1>The real map, in a clearer light.</h1>
           <p className={styles.cardCopy}>
-            ~16,000 live OpenStreetMap features rendered keyless on canvas: painted lane
-            markings, light poles, signals and stop signs, water and parks, plus
-            grade-separated freeway overpasses. Zoom in to see the road paint.
+            Live OpenStreetMap data: painted lane markings, light poles, signals and
+            stop signs, and grade-separated freeway overpasses. Press <strong>Directions</strong>
+            {" "}(or tap the map) to set a start and destination, then <strong>Start drive</strong>
+            {" "}for a first-person 3D route with voice guidance.
           </p>
           <div className={styles.routeSummary}>
-            <div><strong>8 min</strong><span>2.4 mi</span></div>
+            <div><strong>Drive it in 3D</strong><span>tap two points</span></div>
             <div className={styles.routeLine}><i /><span /></div>
-            <button>Directions <b>›</b></button>
+            <button onClick={startDirections}>Directions <b>›</b></button>
           </div>
           <div className={styles.featureRow}>
             <span>Lane paint</span><span>Light poles</span><span>Overpasses</span>
