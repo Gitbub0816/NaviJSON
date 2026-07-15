@@ -2,6 +2,15 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./map.module.css";
+import {
+  buildRouteGraph,
+  findRoute,
+  snapToNetwork,
+  type LngLat as NavLngLat,
+  type Maneuver as NavManeuver,
+  type NavRoute,
+  type RouteGraph,
+} from "./routing";
 
 // Minimal GeoJSON typings (the `geojson` type package is not installed here).
 type Position = number[];
@@ -503,6 +512,165 @@ function CanvasMap({ preset, onZoom }: { preset: LightPreset; onZoom: (delta: nu
   );
 }
 
+// ---- Driver POV navigation helpers -------------------------------------
+const R_EARTH = 6371000;
+const toRad = (d: number) => (d * Math.PI) / 180;
+const toDeg = (r: number) => (r * 180) / Math.PI;
+
+function navHaversine(a: NavLngLat, b: NavLngLat): number {
+  const dLat = toRad(b[1] - a[1]);
+  const dLng = toRad(b[0] - a[0]);
+  const la1 = toRad(a[1]);
+  const la2 = toRad(b[1]);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(la1) * Math.cos(la2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R_EARTH * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+function navBearing(a: NavLngLat, b: NavLngLat): number {
+  const la1 = toRad(a[1]);
+  const la2 = toRad(b[1]);
+  const dLng = toRad(b[0] - a[0]);
+  const y = Math.sin(dLng) * Math.cos(la2);
+  const x = Math.cos(la1) * Math.sin(la2) - Math.sin(la1) * Math.cos(la2) * Math.cos(dLng);
+  return (toDeg(Math.atan2(y, x)) + 360) % 360;
+}
+
+/** Cumulative along-route distance (m) at each vertex. */
+function navCumulative(coords: NavLngLat[]): number[] {
+  const cum = [0];
+  for (let i = 1; i < coords.length; i += 1) cum.push(cum[i - 1] + navHaversine(coords[i - 1], coords[i]));
+  return cum;
+}
+
+/** Position + heading at `dist` meters along the route. */
+function navInterpolate(coords: NavLngLat[], cum: number[], dist: number): { position: NavLngLat; bearing: number } {
+  const total = cum[cum.length - 1];
+  const d = Math.max(0, Math.min(dist, total));
+  let i = 1;
+  while (i < cum.length && cum[i] < d) i += 1;
+  const a = coords[i - 1];
+  const b = coords[Math.min(i, coords.length - 1)];
+  const segLen = cum[i] - cum[i - 1] || 1;
+  const t = (d - cum[i - 1]) / segLen;
+  return {
+    position: [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t],
+    bearing: navBearing(a, b),
+  };
+}
+
+/** Cumulative distance at which each maneuver occurs, from step distances. */
+function navStepCumulative(steps: NavManeuver[]): number[] {
+  const cum = [0];
+  for (let i = 1; i < steps.length; i += 1) cum.push(cum[i - 1] + steps[i - 1].distanceM);
+  return cum;
+}
+
+function navFormatDistance(m: number): string {
+  const mi = m / 1609.344;
+  if (mi < 0.19) return `${Math.round(m / 0.3048 / 10) * 10} ft`;
+  return `${mi.toFixed(mi < 10 ? 1 : 0)} mi`;
+}
+
+function navFormatDuration(s: number): string {
+  const min = Math.round(s / 60);
+  if (min < 60) return `${Math.max(1, min)} min`;
+  return `${Math.floor(min / 60)} h ${min % 60} min`;
+}
+
+const NAV_ICON: Record<NavManeuver["type"], string> = {
+  depart: "●",
+  straight: "↑",
+  "slight-left": "↖",
+  "slight-right": "↗",
+  "turn-left": "←",
+  "turn-right": "→",
+  "sharp-left": "⤶",
+  "sharp-right": "⤷",
+  uturn: "⤺",
+  arrive: "⚑",
+};
+
+type NavGeoSource = { setData: (data: unknown) => void };
+
+function navPointFeatures(points: { coord: NavLngLat; role: string }[]) {
+  return {
+    type: "FeatureCollection",
+    features: points.map((p) => ({
+      type: "Feature",
+      properties: { role: p.role },
+      geometry: { type: "Point", coordinates: p.coord },
+    })),
+  };
+}
+
+const NAV_EMPTY = { type: "FeatureCollection", features: [] };
+
+/** Create the route line, endpoint, and moving-car sources/layers (once, on load). */
+function navInitSources(map: MapboxMap) {
+  if (map.getSource("nav-route")) return;
+  map.addSource("nav-route", { type: "geojson", data: NAV_EMPTY as never });
+  map.addLayer({
+    id: "nav-route-casing",
+    type: "line",
+    source: "nav-route",
+    layout: { "line-cap": "round", "line-join": "round" },
+    paint: { "line-color": "#ffffff", "line-width": 12, "line-opacity": 0.95 },
+  });
+  map.addLayer({
+    id: "nav-route-line",
+    type: "line",
+    source: "nav-route",
+    layout: { "line-cap": "round", "line-join": "round" },
+    paint: { "line-color": "#1a73e8", "line-width": 7 },
+  });
+  map.addSource("nav-endpoints", { type: "geojson", data: NAV_EMPTY as never });
+  map.addLayer({
+    id: "nav-endpoints",
+    type: "circle",
+    source: "nav-endpoints",
+    paint: {
+      "circle-radius": 7,
+      "circle-color": ["match", ["get", "role"], "start", "#1ea66c", "#e0483d"],
+      "circle-stroke-color": "#ffffff",
+      "circle-stroke-width": 3,
+    },
+  });
+  map.addSource("nav-car", { type: "geojson", data: NAV_EMPTY as never });
+  map.addLayer({
+    id: "nav-car",
+    type: "circle",
+    source: "nav-car",
+    paint: { "circle-radius": 8, "circle-color": "#1a73e8", "circle-stroke-color": "#ffffff", "circle-stroke-width": 3 },
+  });
+}
+
+function navSetRoute(map: MapboxMap, coords: NavLngLat[]) {
+  (map.getSource("nav-route") as unknown as NavGeoSource | undefined)?.setData({
+    type: "FeatureCollection",
+    features: [{ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: coords } }],
+  });
+}
+
+function navSetEndpoints(map: MapboxMap, start: NavLngLat | null, end: NavLngLat | null) {
+  const pts: { coord: NavLngLat; role: string }[] = [];
+  if (start) pts.push({ coord: start, role: "start" });
+  if (end) pts.push({ coord: end, role: "end" });
+  (map.getSource("nav-endpoints") as unknown as NavGeoSource | undefined)?.setData(navPointFeatures(pts));
+}
+
+function navSetCar(map: MapboxMap, coord: NavLngLat | null) {
+  const src = map.getSource("nav-car") as unknown as NavGeoSource | undefined;
+  if (!src) return;
+  src.setData(coord ? navPointFeatures([{ coord, role: "car" }]) : { type: "FeatureCollection", features: [] });
+}
+
+function navClear(map: MapboxMap) {
+  const empty = { type: "FeatureCollection", features: [] };
+  (map.getSource("nav-route") as unknown as NavGeoSource | undefined)?.setData(empty);
+  (map.getSource("nav-endpoints") as unknown as NavGeoSource | undefined)?.setData(empty);
+  navSetCar(map, null);
+}
+
 export function NaviMap({ mapboxToken, tilesetUrl = "" }: { mapboxToken: string; tilesetUrl?: string }) {
   const mapNodeRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapboxMap | null>(null);
@@ -511,6 +679,36 @@ export function NaviMap({ mapboxToken, tilesetUrl = "" }: { mapboxToken: string;
   const [detailOpen, setDetailOpen] = useState(true);
   const [, setZoomPulse] = useState(0);
   const statewide = Boolean(tilesetUrl);
+
+  // ---- Driver POV navigation ----
+  const graphRef = useRef<RouteGraph | null>(null);
+  const startRef = useRef<NavLngLat | null>(null);
+  const destRef = useRef<NavLngLat | null>(null);
+  const routeRef = useRef<NavRoute | null>(null);
+  const drivingRef = useRef(false);
+  const rafRef = useRef<number | null>(null);
+  const spokenRef = useRef<Set<number>>(new Set());
+  const voiceOnRef = useRef(true);
+  const [route, setRoute] = useState<NavRoute | null>(null);
+  const [driving, setDriving] = useState(false);
+  const [stepIndex, setStepIndex] = useState(0);
+  const [navReady, setNavReady] = useState(false);
+  const [voiceOn, setVoiceOn] = useState(true);
+  const [navHint, setNavHint] = useState("Tap the map to set your start point");
+  const [driveInfo, setDriveInfo] = useState<{ toNext: number; remaining: number } | null>(null);
+
+  const speak = useCallback((text: string) => {
+    if (!voiceOnRef.current || typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    try {
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1.02;
+      u.pitch = 1;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    } catch {
+      /* speech synthesis unavailable */
+    }
+  }, []);
 
   useEffect(() => {
     if (!mapboxToken || !mapNodeRef.current) return;
@@ -533,7 +731,10 @@ export function NaviMap({ mapboxToken, tilesetUrl = "" }: { mapboxToken: string;
             const { Protocol } = await import("pmtiles");
             const protocol = new Protocol();
             // pmtiles ships a MapLibre/Mapbox-compatible protocol handler.
-            mapboxgl.addProtocol("pmtiles", protocol.tile as never);
+            (mapboxgl as unknown as { addProtocol: (id: string, fn: unknown) => void }).addProtocol(
+              "pmtiles",
+              protocol.tile,
+            );
           }
           const response = await fetch("/maps/GeoJSON/A_M-light/style-statewide.json");
           const statewideStyle = (await response.json()) as {
@@ -560,7 +761,10 @@ export function NaviMap({ mapboxToken, tilesetUrl = "" }: { mapboxToken: string;
       });
       map.addControl(new mapboxgl.NavigationControl({ showCompass: true }), "bottom-right");
       map.addControl(new mapboxgl.AttributionControl({ compact: true }), "bottom-right");
-      map.once("load", () => setMapReady(true));
+      map.once("load", () => {
+        navInitSources(map);
+        setMapReady(true);
+      });
       mapRef.current = map;
     })();
 
@@ -570,6 +774,165 @@ export function NaviMap({ mapboxToken, tilesetUrl = "" }: { mapboxToken: string;
       mapRef.current = null;
     };
   }, [mapboxToken, tilesetUrl]);
+
+  // Build the routing graph from the road network once (Mapbox mode only).
+  useEffect(() => {
+    if (!mapboxToken) return;
+    let active = true;
+    fetch(DATA_URL)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!active) return;
+        try {
+          graphRef.current = buildRouteGraph(data as never);
+          setNavReady(true);
+        } catch (error) {
+          console.error("NaviJSON nav: routing graph failed to build.", error);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [mapboxToken]);
+
+  const clearRoute = useCallback(() => {
+    drivingRef.current = false;
+    setDriving(false);
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+    startRef.current = null;
+    destRef.current = null;
+    routeRef.current = null;
+    spokenRef.current.clear();
+    setRoute(null);
+    setStepIndex(0);
+    setDriveInfo(null);
+    setNavHint("Tap the map to set your start point");
+    const map = mapRef.current;
+    if (map) {
+      navClear(map);
+      map.easeTo({ pitch: 44, zoom: 14.7, duration: 900 });
+    }
+  }, []);
+
+  const endDrive = useCallback(() => {
+    drivingRef.current = false;
+    setDriving(false);
+    setDriveInfo(null);
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+    const map = mapRef.current;
+    if (map) {
+      navSetCar(map, null);
+      map.easeTo({ pitch: 44, zoom: 15, duration: 1000 });
+    }
+  }, []);
+
+  const startDrive = useCallback(() => {
+    const map = mapRef.current;
+    const r = routeRef.current;
+    if (!map || !r || r.coordinates.length < 2) return;
+    const coords = r.coordinates;
+    const cum = navCumulative(coords);
+    const total = cum[cum.length - 1];
+    const stepCum = navStepCumulative(r.steps);
+    spokenRef.current.clear();
+    drivingRef.current = true;
+    setDriving(true);
+    setDetailOpen(false);
+    setStepIndex(0);
+    speak(r.steps[0]?.instruction ?? "Starting route");
+
+    const speed = 18; // m/s presentation speed
+    let last = performance.now();
+    let travelled = 0;
+
+    const frame = (nowT: number) => {
+      if (!drivingRef.current) return;
+      const dt = (nowT - last) / 1000;
+      last = nowT;
+      travelled = Math.min(total, travelled + dt * speed);
+      const { position, bearing } = navInterpolate(coords, cum, travelled);
+      map.jumpTo({ center: position, bearing, pitch: 72, zoom: 18 });
+      navSetCar(map, position);
+
+      // Which maneuver is next, and how far to it.
+      let next = stepCum.length - 1;
+      for (let i = 0; i < stepCum.length; i += 1) {
+        if (stepCum[i] > travelled + 0.5) {
+          next = i;
+          break;
+        }
+      }
+      setStepIndex(next);
+      // Voice: announce a maneuver ~60m out, once.
+      const toNext = stepCum[next] - travelled;
+      setDriveInfo({ toNext: Math.max(0, toNext), remaining: Math.max(0, total - travelled) });
+      if (toNext < 60 && toNext > 0 && !spokenRef.current.has(next)) {
+        spokenRef.current.add(next);
+        speak(r.steps[next]?.instruction ?? "");
+      }
+
+      if (travelled >= total) {
+        speak("You have arrived at your destination");
+        endDrive();
+        return;
+      }
+      rafRef.current = requestAnimationFrame(frame);
+    };
+    rafRef.current = requestAnimationFrame(frame);
+  }, [speak, endDrive]);
+
+  // Click to drop start, then destination; compute the traffic-aware route.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapboxToken || !mapReady) return;
+    const onClick = (e: { lngLat: { lng: number; lat: number } }) => {
+      const graph = graphRef.current;
+      if (drivingRef.current || !graph) return;
+      const pt: NavLngLat = [e.lngLat.lng, e.lngLat.lat];
+      const snapped = snapToNetwork(graph, pt) ?? pt;
+      if (!startRef.current || routeRef.current) {
+        // fresh start (first click, or restart after a route was set)
+        startRef.current = snapped;
+        destRef.current = null;
+        routeRef.current = null;
+        setRoute(null);
+        setStepIndex(0);
+        navSetRoute(map, []);
+        navSetEndpoints(map, snapped, null);
+        setNavHint("Now tap your destination");
+        return;
+      }
+      const r = findRoute(graph, startRef.current, snapped, { traffic: true });
+      if (r && r.steps.length >= 2) {
+        destRef.current = snapped;
+        routeRef.current = r;
+        setRoute(r);
+        setStepIndex(0);
+        navSetRoute(map, r.coordinates);
+        navSetEndpoints(map, startRef.current, snapped);
+        setNavHint("");
+      } else {
+        setNavHint("No route found — pick two points within the same city.");
+      }
+    };
+    map.on("click", onClick);
+    return () => {
+      map.off("click", onClick);
+    };
+  }, [mapReady, mapboxToken]);
+
+  // Stop any animation frame on unmount.
+  useEffect(() => {
+    voiceOnRef.current = voiceOn;
+  }, [voiceOn]);
+  useEffect(() => {
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
 
   const selectPreset = (nextPreset: LightPreset) => {
     setPreset(nextPreset);
@@ -627,7 +990,76 @@ export function NaviMap({ mapboxToken, tilesetUrl = "" }: { mapboxToken: string;
         ))}
       </div>
 
-      {detailOpen && (
+      {mapboxToken && navReady && (
+        <div className={styles.nav} aria-live="polite">
+          {driving && route ? (
+            <>
+              <div className={styles.navBanner}>
+                <span className={styles.navArrow}>{NAV_ICON[route.steps[stepIndex]?.type ?? "straight"]}</span>
+                <div className={styles.navBannerText}>
+                  <strong>{route.steps[stepIndex]?.instruction ?? "Continue"}</strong>
+                  {driveInfo && <span>in {navFormatDistance(driveInfo.toNext)}</span>}
+                </div>
+              </div>
+              <div className={styles.navDriveBar}>
+                <span>{navFormatDistance(driveInfo ? driveInfo.remaining : route.distanceM)} left</span>
+                <button
+                  className={styles.navVoice}
+                  onClick={() => setVoiceOn((v) => !v)}
+                  aria-pressed={voiceOn}
+                  title="Voice guidance"
+                >
+                  {voiceOn ? "🔊" : "🔇"}
+                </button>
+                <button className={styles.navEnd} onClick={endDrive}>End</button>
+              </div>
+            </>
+          ) : route ? (
+            <div className={styles.navCard}>
+              <div className={styles.navSummary}>
+                <strong>{navFormatDuration(route.durationS)}</strong>
+                <span>{navFormatDistance(route.distanceM)}</span>
+                <span
+                  className={`${styles.navTraffic} ${
+                    route.trafficLevel === "heavy"
+                      ? styles.trafficHeavy
+                      : route.trafficLevel === "moderate"
+                        ? styles.trafficModerate
+                        : styles.trafficLight
+                  }`}
+                >
+                  {route.trafficLevel} traffic
+                </span>
+              </div>
+              <div className={styles.navActions}>
+                <button className={styles.navStart} onClick={startDrive}>▶ Start drive</button>
+                <button className={styles.navGhost} onClick={clearRoute}>Clear</button>
+                <button
+                  className={styles.navVoice}
+                  onClick={() => setVoiceOn((v) => !v)}
+                  aria-pressed={voiceOn}
+                  title="Voice guidance"
+                >
+                  {voiceOn ? "🔊" : "🔇"}
+                </button>
+              </div>
+              <ol className={styles.navSteps}>
+                {route.steps.map((s: NavManeuver, i: number) => (
+                  <li key={i} className={i === stepIndex ? styles.navStepActive : ""}>
+                    <span className={styles.navStepIcon}>{NAV_ICON[s.type]}</span>
+                    <span className={styles.navStepText}>{s.instruction}</span>
+                    {s.distanceM > 0 && <span className={styles.navStepDist}>{navFormatDistance(s.distanceM)}</span>}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ) : (
+            <div className={styles.navHint}>{navHint}</div>
+          )}
+        </div>
+      )}
+
+      {detailOpen && !route && !driving && (
         <section className={styles.placeCard} aria-label="Selected place">
           <button className={styles.closeCard} aria-label="Close details" onClick={() => setDetailOpen(false)}>×</button>
           <p className={styles.eyebrow}>Downtown San José + I-280/CA-87 interchange</p>
@@ -648,7 +1080,7 @@ export function NaviMap({ mapboxToken, tilesetUrl = "" }: { mapboxToken: string;
         </section>
       )}
 
-      {!detailOpen && (
+      {!detailOpen && !route && !driving && (
         <button className={styles.reopenCard} onClick={() => setDetailOpen(true)}>Explore the style</button>
       )}
 
