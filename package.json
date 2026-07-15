@@ -6,7 +6,9 @@
     "node": ">=22.13.0"
   },
   "scripts": {
+    "predev": "node scripts/derive-sample.mjs",
     "dev": "vinext dev",
+    "prebuild": "node scripts/derive-sample.mjs",
     "build": "vinext build",
     "postbuild": "node scripts/postbuild-assetsignore.mjs",
     "start": "vinext start",

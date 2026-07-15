@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import "mapbox-gl/dist/mapbox-gl.css";
 import styles from "./map.module.css";
 import {
   buildRouteGraph,
@@ -29,11 +30,12 @@ type FeatureCollection = { type: "FeatureCollection"; features: Feature[] };
 type LightPreset = "day" | "dawn" | "dusk";
 type MapboxMap = import("mapbox-gl").Map;
 
-const DATA_URL = "/maps/GeoJSON/A_M-light/features.geojson";
-// In production the full Reality Layer is served from object storage (R2/S3),
-// not bundled as a Cloudflare static asset (25 MiB/file limit). Point
-// NEXT_PUBLIC_FEATURES_URL at that URL; falls back to the local asset in dev.
-const FEATURES_URL = process.env.NEXT_PUBLIC_FEATURES_URL || DATA_URL;
+// Same-origin, deploy-sized data files generated at build time by
+// scripts/derive-sample.mjs (the full 48 MB features.geojson exceeds
+// Cloudflare's 25 MiB asset limit and r2.dev can't serve it with CORS).
+// Override with env vars to point at a CORS-enabled host (custom domain).
+const RENDER_URL = process.env.NEXT_PUBLIC_FEATURES_URL || "/maps/GeoJSON/A_M-light/features-render.geojson";
+const ROUTING_URL = process.env.NEXT_PUBLIC_ROUTING_URL || "/maps/GeoJSON/A_M-light/roads.geojson";
 
 // Fallback bounds (metadata `navijson:bbox`) if the collection carries no coords.
 const FALLBACK_BOUNDS = {
@@ -455,7 +457,7 @@ function CanvasMap({ preset, onZoom }: { preset: LightPreset; onZoom: (delta: nu
 
   useEffect(() => {
     let active = true;
-    fetch(FEATURES_URL)
+    fetch(RENDER_URL)
       .then((response) => response.json())
       .then((data: FeatureCollection) => {
         if (!active) return;
@@ -751,18 +753,18 @@ export function NaviMap({ mapboxToken, tilesetUrl = "" }: { mapboxToken: string;
         } catch (error) {
           console.error("NaviJSON: statewide tileset style failed to load; using sample.", error);
         }
-      } else if (FEATURES_URL !== DATA_URL) {
-        // Sample data served from R2/S3 (not bundled) — rewrite the style's
-        // GeoJSON source to the external URL.
+      } else {
+        // Point the style's GeoJSON source at the same-origin render file (the
+        // bundled style.json references the 48 MB file, which isn't deployed).
         try {
           const response = await fetch("/maps/GeoJSON/A_M-light/style.json");
           const sampleStyle = (await response.json()) as {
             sources: Record<string, { data?: string }>;
           };
-          sampleStyle.sources["navijson-reality"].data = FEATURES_URL;
+          sampleStyle.sources["navijson-reality"].data = RENDER_URL;
           style = sampleStyle;
         } catch (error) {
-          console.error("NaviJSON: could not load style for external features URL.", error);
+          console.error("NaviJSON: could not load style for the render features URL.", error);
         }
       }
       if (!active || !mapNodeRef.current) return;
@@ -804,7 +806,7 @@ export function NaviMap({ mapboxToken, tilesetUrl = "" }: { mapboxToken: string;
     buildingRef.current = true;
     setNavBuilding(true);
     try {
-      const data = await fetch(FEATURES_URL).then((r) => r.json());
+      const data = await fetch(ROUTING_URL).then((r) => r.json());
       graphRef.current = buildRouteGraph(data as never);
       return graphRef.current;
     } catch (error) {
