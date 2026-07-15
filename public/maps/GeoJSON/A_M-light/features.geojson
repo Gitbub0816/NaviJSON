@@ -1,0 +1,42 @@
+{
+  "type": "FeatureCollection",
+  "name": "NaviJSON California Light — San José fixture",
+  "features": [
+    { "type": "Feature", "properties": { "feature_type": "water", "name": "Guadalupe River" }, "geometry": { "type": "Polygon", "coordinates": [[[-121.9021,37.323],[-121.9009,37.327],[-121.9011,37.331],[-121.9000,37.335],[-121.9004,37.339],[-121.8994,37.343],[-121.8997,37.349],[-121.8979,37.349],[-121.8981,37.343],[-121.8974,37.339],[-121.8982,37.335],[-121.8976,37.331],[-121.8991,37.327],[-121.8995,37.323],[-121.9021,37.323]]] } },
+    { "type": "Feature", "properties": { "feature_type": "park", "name": "Discovery Meadow" }, "geometry": { "type": "Polygon", "coordinates": [[[-121.8959,37.3281],[-121.8913,37.3282],[-121.8916,37.3312],[-121.8962,37.3310],[-121.8959,37.3281]]] } },
+    { "type": "Feature", "properties": { "feature_type": "park", "name": "Plaza de César Chávez" }, "geometry": { "type": "Polygon", "coordinates": [[[-121.8912,37.3311],[-121.8881,37.3312],[-121.8882,37.3337],[-121.8911,37.3336],[-121.8912,37.3311]]] } },
+    { "type": "Feature", "properties": { "feature_type": "park", "name": "St. James Park" }, "geometry": { "type": "Polygon", "coordinates": [[[-121.8915,37.3388],[-121.8873,37.3389],[-121.8874,37.3413],[-121.8914,37.3412],[-121.8915,37.3388]]] } },
+
+    { "type": "Feature", "properties": { "feature_type": "building", "height": 54 }, "geometry": { "type": "Polygon", "coordinates": [[[-121.8943,37.3341],[-121.8928,37.3341],[-121.8928,37.3351],[-121.8944,37.3351],[-121.8943,37.3341]]] } },
+    { "type": "Feature", "properties": { "feature_type": "building", "height": 78 }, "geometry": { "type": "Polygon", "coordinates": [[[-121.8921,37.3340],[-121.8908,37.3340],[-121.8908,37.3351],[-121.8921,37.3350],[-121.8921,37.3340]]] } },
+    { "type": "Feature", "properties": { "feature_type": "building", "height": 46 }, "geometry": { "type": "Polygon", "coordinates": [[[-121.8875,37.3342],[-121.8859,37.3342],[-121.8859,37.3350],[-121.8875,37.3350],[-121.8875,37.3342]]] } },
+    { "type": "Feature", "properties": { "feature_type": "building", "height": 63 }, "geometry": { "type": "Polygon", "coordinates": [[[-121.8852,37.3364],[-121.8838,37.3364],[-121.8838,37.3374],[-121.8852,37.3374],[-121.8852,37.3364]]] } },
+    { "type": "Feature", "properties": { "feature_type": "building", "height": 42 }, "geometry": { "type": "Polygon", "coordinates": [[[-121.8946,37.3363],[-121.8930,37.3363],[-121.8930,37.3374],[-121.8946,37.3374],[-121.8946,37.3363]]] } },
+    { "type": "Feature", "properties": { "feature_type": "building", "height": 88 }, "geometry": { "type": "Polygon", "coordinates": [[[-121.8874,37.3362],[-121.8860,37.3362],[-121.8860,37.3374],[-121.8874,37.3374],[-121.8874,37.3362]]] } },
+    { "type": "Feature", "properties": { "feature_type": "building", "height": 35 }, "geometry": { "type": "Polygon", "coordinates": [[[-121.8920,37.3420],[-121.8905,37.3420],[-121.8905,37.3432],[-121.8920,37.3432],[-121.8920,37.3420]]] } },
+    { "type": "Feature", "properties": { "feature_type": "building", "height": 29 }, "geometry": { "type": "Polygon", "coordinates": [[[-121.8873,37.3420],[-121.8856,37.3420],[-121.8856,37.3432],[-121.8873,37.3432],[-121.8873,37.3420]]] } },
+    { "type": "Feature", "properties": { "feature_type": "building", "height": 52 }, "geometry": { "type": "Polygon", "coordinates": [[[-121.8848,37.3392],[-121.8832,37.3392],[-121.8832,37.3404],[-121.8848,37.3404],[-121.8848,37.3392]]] } },
+
+    { "type": "Feature", "properties": { "feature_type": "motorway", "class": "motorway", "name": "CA 87" }, "geometry": { "type": "LineString", "coordinates": [[-121.8977,37.323],[-121.8969,37.329],[-121.8965,37.335],[-121.8956,37.341],[-121.8940,37.349]] } },
+    { "type": "Feature", "properties": { "feature_type": "primary", "class": "primary", "name": "Santa Clara Street" }, "geometry": { "type": "LineString", "coordinates": [[-121.904,37.3353],[-121.8972,37.3354],[-121.8912,37.3355],[-121.8848,37.3356],[-121.8785,37.3356],[-121.872,37.3358]] } },
+    { "type": "Feature", "properties": { "feature_type": "primary", "class": "primary", "name": "Market Street" }, "geometry": { "type": "LineString", "coordinates": [[-121.8952,37.323],[-121.8925,37.328],[-121.8894,37.333],[-121.8874,37.337],[-121.8845,37.342],[-121.8812,37.349]] } },
+    { "type": "Feature", "properties": { "feature_type": "primary", "class": "primary", "name": "Almaden Boulevard" }, "geometry": { "type": "LineString", "coordinates": [[-121.8998,37.323],[-121.8967,37.328],[-121.8939,37.333],[-121.8920,37.338],[-121.8892,37.344],[-121.8868,37.349]] } },
+    { "type": "Feature", "properties": { "feature_type": "street", "name": "San Fernando Street" }, "geometry": { "type": "LineString", "coordinates": [[-121.902,37.3333],[-121.8950,37.3334],[-121.8885,37.3335],[-121.8815,37.3336],[-121.874,37.3336]] } },
+    { "type": "Feature", "properties": { "feature_type": "street", "name": "St John Street" }, "geometry": { "type": "LineString", "coordinates": [[-121.902,37.3377],[-121.8947,37.3378],[-121.8878,37.3379],[-121.8807,37.338],[-121.873,37.338]] } },
+    { "type": "Feature", "properties": { "feature_type": "street", "name": "Julian Street" }, "geometry": { "type": "LineString", "coordinates": [[-121.902,37.3410],[-121.8950,37.3411],[-121.8881,37.3412],[-121.8810,37.3413],[-121.873,37.3414]] } },
+    { "type": "Feature", "properties": { "feature_type": "street", "name": "Reed Street" }, "geometry": { "type": "LineString", "coordinates": [[-121.903,37.3282],[-121.8960,37.3283],[-121.8890,37.3284],[-121.8820,37.3285],[-121.874,37.3285]] } },
+    { "type": "Feature", "properties": { "feature_type": "street", "name": "3rd Street" }, "geometry": { "type": "LineString", "coordinates": [[-121.8932,37.323],[-121.8916,37.330],[-121.8902,37.336],[-121.8886,37.342],[-121.8870,37.349]] } },
+    { "type": "Feature", "properties": { "feature_type": "street", "name": "7th Street" }, "geometry": { "type": "LineString", "coordinates": [[-121.8867,37.323],[-121.8852,37.330],[-121.8837,37.336],[-121.8821,37.342],[-121.8805,37.349]] } },
+    { "type": "Feature", "properties": { "feature_type": "street", "name": "10th Street" }, "geometry": { "type": "LineString", "coordinates": [[-121.8818,37.323],[-121.8803,37.330],[-121.8787,37.336],[-121.8772,37.342],[-121.8755,37.349]] } },
+
+    { "type": "Feature", "properties": { "feature_type": "lane_divider", "pattern": "dashed", "confidence": 0.96 }, "geometry": { "type": "LineString", "coordinates": [[-121.8973,37.323],[-121.8965,37.329],[-121.8961,37.335],[-121.8952,37.341],[-121.8936,37.349]] } },
+    { "type": "Feature", "properties": { "feature_type": "lane_divider", "pattern": "dashed", "confidence": 0.94 }, "geometry": { "type": "LineString", "coordinates": [[-121.904,37.3350],[-121.8972,37.3351],[-121.8912,37.3352],[-121.8848,37.3353],[-121.8785,37.3353],[-121.872,37.3355]] } },
+    { "type": "Feature", "properties": { "feature_type": "route", "traffic": "free", "confidence": 1 }, "geometry": { "type": "LineString", "coordinates": [[-121.8976,37.3407],[-121.8956,37.341],[-121.8925,37.3411],[-121.8904,37.3378],[-121.8894,37.333],[-121.8867,37.3284],[-121.8846,37.3260]] } },
+    { "type": "Feature", "properties": { "feature_type": "crosswalk", "confidence": 0.91 }, "geometry": { "type": "LineString", "coordinates": [[-121.8899,37.3351],[-121.8898,37.3359]] } },
+    { "type": "Feature", "properties": { "feature_type": "crosswalk", "confidence": 0.92 }, "geometry": { "type": "LineString", "coordinates": [[-121.8878,37.3376],[-121.8877,37.3383]] } },
+    { "type": "Feature", "properties": { "feature_type": "crosswalk", "confidence": 0.9 }, "geometry": { "type": "LineString", "coordinates": [[-121.8921,37.3331],[-121.8918,37.3339]] } },
+    { "type": "Feature", "properties": { "feature_type": "signal", "confidence": 0.97 }, "geometry": { "type": "Point", "coordinates": [-121.8899,37.3355] } },
+    { "type": "Feature", "properties": { "feature_type": "signal", "confidence": 0.95 }, "geometry": { "type": "Point", "coordinates": [-121.8878,37.3379] } },
+    { "type": "Feature", "properties": { "feature_type": "signal", "confidence": 0.93 }, "geometry": { "type": "Point", "coordinates": [-121.8920,37.3335] } }
+  ]
+}

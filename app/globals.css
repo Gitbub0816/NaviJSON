@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #1d2528;
+  --muted: #657176;
+  --blue: #1677ff;
+  --panel: rgba(255, 255, 255, 0.9);
+  --panel-border: rgba(37, 49, 54, 0.11);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  color: var(--ink);
+  background: #e9ece8;
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+}
+
+::selection {
+  color: #fff;
+  background: #1677ff;
+}

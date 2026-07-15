@@ -1,0 +1,26 @@
+# Data and imagery policy
+
+## Allowed production inputs
+
+- OpenStreetMap and Overture, with their required attribution and license handling.
+- NAIP, USGS 3DEP, and other public-domain government sources where the dataset metadata confirms the intended use.
+- Mapillary or KartaView only under the terms that apply to the specific access and derivative workflow.
+- State, county, city, transit, and utility datasets whose licenses permit redistribution or derived mapping data.
+- Customer-provided or commercial data with explicit rights for storage, transformation, and publication.
+
+## Restricted inputs
+
+Do not trace, digitize, measure, or automatically extract production NaviJSON features from Google Maps, Google Street View, Apple Maps, or another restricted service unless NaviJSON has written rights covering derivative geospatial data.
+
+Studying general visual presentation is not a provenance source. Production features require a permitted source, an observation date when applicable, a confidence score, and a review state.
+
+## Publication gate
+
+A feature can enter a production Reality Layer only when:
+
+1. its source permits the intended use;
+2. provenance and attribution requirements are recorded;
+3. geometry is valid;
+4. confidence meets the feature-class threshold;
+5. review requirements are complete; and
+6. contradictory authoritative data has been resolved.
