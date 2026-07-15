@@ -10,6 +10,7 @@
     "build": "vinext build",
     "postbuild": "node scripts/postbuild-assetsignore.mjs",
     "start": "vinext start",
+    "deploy": "npm run build && cd dist/server && wrangler deploy",
     "test": "npm run build && node --test tests/rendered-html.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"
