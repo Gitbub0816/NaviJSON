@@ -47,4 +47,6 @@ node scripts/pipeline/build-region.mjs --bbox W,S,E,N --id my-area
 
 ## Statewide California
 
-The `statewide` entry in `regions.json` holds the full California bounding box. The whole-state extent is **not** built from a live Overpass call and its raw output is **not** committed. Instead it is produced offline from a downloaded **Geofabrik California `.osm.pbf`** extract, transformed into the NaviJSON schema, and run through **tippecanoe** to produce vector tiles / **PMTiles**. That hosted tileset is then pointed at by the `navijson-reality` source (replacing the committed sample GeoJSON) once it is published. This keeps the repository light while giving a documented path from the sample regions to statewide coverage.
+The `statewide` entry in `regions.json` holds the full California bounding box. The whole-state extent is **not** built from a live Overpass call and its raw output is **not** committed. Instead it is produced offline by `scripts/pipeline/build-statewide.sh` from a downloaded **Geofabrik California `.osm.pbf`** extract, transformed into the NaviJSON schema, and run through **tippecanoe** into a zoom 4–16 vector-tile tileset (**PMTiles** or **MBTiles**). This has been built end-to-end: **16,983,701 features** spanning the full state. The `style-statewide.json` variant points the `navijson-reality` source at that hosted tileset instead of the committed sample GeoJSON.
+
+Full build stats, Mapbox upload steps, and PMTiles hosting are in [`docs/STATEWIDE_TILESET.md`](STATEWIDE_TILESET.md).
