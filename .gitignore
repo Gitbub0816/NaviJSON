@@ -34,6 +34,9 @@ yarn-error.log*
 
 # navijson pipeline intermediates (merged output is committed as features.geojson)
 /scripts/pipeline/out/
+# statewide tileset build (PBF download + multi-GB intermediates + PMTiles artifact)
+/scripts/pipeline/statewide-build/
+tsconfig.tsbuildinfo
 
 # vercel
 .vercel

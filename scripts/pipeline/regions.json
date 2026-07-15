@@ -1,5 +1,5 @@
 {
-  "description": "NaviJSON California enrichment regions. `statewide` is the full-state bounding box used for large tiled runs (do not commit its raw output); `committed` regions are small, representative extracts generated and checked in as the demonstration Reality Layer.",
+  "description": "NaviJSON California enrichment regions. `statewide` is the full-state bounding box used for large tiled runs (do not commit its raw output). `committed` regions are dense, representative extracts across California — major metro cores plus iconic freeway interchanges — generated and checked in as the demonstration Reality Layer.",
   "license": "OpenStreetMap contributors, ODbL",
   "statewide": {
     "id": "california",
@@ -19,7 +19,88 @@
       "name": "I-280 / CA-87 Interchange, San José",
       "bbox": { "west": -121.9008, "south": 37.3178, "east": -121.8792, "north": 37.3306 },
       "center": [-121.8894, 37.3242],
-      "note": "Freeway interchange chosen to exercise bridge/tunnel/layer grade separation (overpasses and underpasses)."
+      "note": "Freeway interchange exercising bridge/tunnel/layer grade separation."
+    },
+    {
+      "id": "sf-financial-district",
+      "name": "San Francisco Financial District / SoMa",
+      "bbox": { "west": -122.4085, "south": 37.7845, "east": -122.3915, "north": 37.7985 },
+      "center": [-122.4, 37.7915]
+    },
+    {
+      "id": "oakland-downtown",
+      "name": "Downtown Oakland",
+      "bbox": { "west": -122.2825, "south": 37.7955, "east": -122.2585, "north": 37.8125 },
+      "center": [-122.2705, 37.804]
+    },
+    {
+      "id": "macarthur-maze",
+      "name": "MacArthur Maze (I-80 / I-580 / I-880), Oakland",
+      "bbox": { "west": -122.3105, "south": 37.8175, "east": -122.2855, "north": 37.8345 },
+      "center": [-122.298, 37.826],
+      "note": "Multi-level freeway interchange, heavy grade separation."
+    },
+    {
+      "id": "sacramento-downtown",
+      "name": "Downtown Sacramento (Capitol)",
+      "bbox": { "west": -121.505, "south": 38.5695, "east": -121.487, "north": 38.5855 },
+      "center": [-121.496, 38.5775]
+    },
+    {
+      "id": "fresno-downtown",
+      "name": "Downtown Fresno",
+      "bbox": { "west": -119.8, "south": 36.73, "east": -119.78, "north": 36.746 },
+      "center": [-119.79, 36.738]
+    },
+    {
+      "id": "la-downtown",
+      "name": "Downtown Los Angeles",
+      "bbox": { "west": -118.264, "south": 34.04, "east": -118.238, "north": 34.058 },
+      "center": [-118.251, 34.049]
+    },
+    {
+      "id": "pregerson-interchange",
+      "name": "Judge Harry Pregerson Interchange (I-105 / I-110), LA",
+      "bbox": { "west": -118.293, "south": 33.92, "east": -118.269, "north": 33.936 },
+      "center": [-118.281, 33.928],
+      "note": "Four-level stack interchange, extreme grade separation."
+    },
+    {
+      "id": "la-405-10-interchange",
+      "name": "I-405 / I-10 Interchange, West LA",
+      "bbox": { "west": -118.448, "south": 34.022, "east": -118.424, "north": 34.04 },
+      "center": [-118.436, 34.031]
+    },
+    {
+      "id": "santa-monica",
+      "name": "Santa Monica",
+      "bbox": { "west": -118.503, "south": 34.008, "east": -118.483, "north": 34.024 },
+      "center": [-118.493, 34.016]
+    },
+    {
+      "id": "pasadena-downtown",
+      "name": "Downtown Pasadena",
+      "bbox": { "west": -118.156, "south": 34.14, "east": -118.134, "north": 34.156 },
+      "center": [-118.145, 34.148]
+    },
+    {
+      "id": "long-beach-downtown",
+      "name": "Downtown Long Beach",
+      "bbox": { "west": -118.205, "south": 33.76, "east": -118.183, "north": 33.776 },
+      "center": [-118.194, 33.768]
+    },
+    {
+      "id": "san-diego-downtown",
+      "name": "Downtown San Diego",
+      "bbox": { "west": -117.174, "south": 32.706, "east": -117.152, "north": 32.723 },
+      "center": [-117.163, 32.7145]
+    },
+    {
+      "id": "san-diego-i15-i8",
+      "name": "I-15 / I-8 Interchange, San Diego",
+      "bbox": { "west": -117.113, "south": 32.774, "east": -117.089, "north": 32.792 },
+      "center": [-117.101, 32.783],
+      "note": "Urban freeway interchange with stacked ramps."
     }
   ]
 }

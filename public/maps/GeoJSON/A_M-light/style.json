@@ -7,7 +7,7 @@
     "navijson:license": "Style code: repository license; geographic fixture: demonstration data"
   },
   "center": [-121.8906, 37.3374],
-  "zoom": 14.7,
+  "zoom": 14,
   "pitch": 44,
   "bearing": -18,
   "imports": [
@@ -32,12 +32,53 @@
   },
   "layers": [
     {
+      "id": "nj-landuse",
+      "type": "fill",
+      "source": "navijson-reality",
+      "slot": "bottom",
+      "filter": ["==", ["get", "feature_type"], "landuse"],
+      "paint": {
+        "fill-color": [
+          "match",
+          ["get", "nj_class"],
+          "residential", "#e9e6df",
+          "commercial", "#efe7d6",
+          "retail", "#f0e5d3",
+          "industrial", "#e5e6e2",
+          "railway", "#e3e4e0",
+          "construction", "#ece8df",
+          "#eef0eb"
+        ],
+        "fill-opacity": 0.55
+      }
+    },
+    {
       "id": "nj-parks",
       "type": "fill",
       "source": "navijson-reality",
       "slot": "bottom",
       "filter": ["==", ["get", "feature_type"], "park"],
-      "paint": { "fill-color": "#dcebd7", "fill-opacity": 0.82 }
+      "paint": {
+        "fill-color": [
+          "match",
+          ["get", "nj_class"],
+          "pitch", "#cfe6be",
+          "playground", "#d7ead0",
+          "dog_park", "#d3ecc8",
+          "garden", "#d8ecca",
+          "grass", "#dcecd2",
+          "#dcebd7"
+        ],
+        "fill-opacity": 0.82
+      }
+    },
+    {
+      "id": "nj-pedestrian-area",
+      "type": "fill",
+      "source": "navijson-reality",
+      "slot": "bottom",
+      "filter": ["==", ["get", "feature_type"], "pedestrian_area"],
+      "paint": { "fill-color": "#ece7dc", "fill-opacity": 0.7 }
     },
     {
       "id": "nj-water",
@@ -47,6 +88,276 @@
       "filter": ["==", ["get", "feature_type"], "water"],
       "paint": { "fill-color": "#a9d9ef", "fill-opacity": 0.88 }
     },
+    {
+      "id": "nj-waterway",
+      "type": "line",
+      "source": "navijson-reality",
+      "slot": "bottom",
+      "filter": ["==", ["get", "feature_type"], "waterway"],
+      "layout": { "line-cap": "round", "line-join": "round" },
+      "paint": {
+        "line-color": "#7fc4e6",
+        "line-opacity": 0.85,
+        "line-width": [
+          "interpolate", ["linear"], ["zoom"],
+          11, 0.6,
+          14, ["match", ["get", "nj_class"], "river", 3, "canal", 2.4, "stream", 1.4, 1],
+          18, ["match", ["get", "nj_class"], "river", 9, "canal", 7, "stream", 3.5, 2.5]
+        ]
+      }
+    },
+
+    {
+      "id": "nj-road-tunnel-casing",
+      "type": "line",
+      "source": "navijson-reality",
+      "slot": "middle",
+      "minzoom": 12,
+      "filter": ["all", ["==", ["get", "feature_type"], "road"], ["any", ["==", ["get", "tunnel"], true], ["<", ["get", "layer"], 0]]],
+      "layout": { "line-cap": "butt", "line-join": "round" },
+      "paint": {
+        "line-color": "#cdccc6",
+        "line-opacity": 0.6,
+        "line-width": [
+          "interpolate", ["linear"], ["zoom"],
+          12, 1.5,
+          14, ["match", ["get", "rank"], 8, 14, 7, 11, 6, 9, 5, 7, 4, 5.5, 2, 3.6, 1, 2.6, 2.6],
+          18, ["match", ["get", "rank"], 8, 36, 7, 27, 6, 20, 5, 15, 4, 12, 2, 8, 1, 5.5, 5.5]
+        ]
+      }
+    },
+    {
+      "id": "nj-road-tunnel-fill",
+      "type": "line",
+      "source": "navijson-reality",
+      "slot": "middle",
+      "minzoom": 12,
+      "filter": ["all", ["==", ["get", "feature_type"], "road"], ["any", ["==", ["get", "tunnel"], true], ["<", ["get", "layer"], 0]]],
+      "layout": { "line-cap": "butt", "line-join": "round" },
+      "paint": {
+        "line-color": ["case", [">=", ["get", "rank"], 7], "#faedc6", "#f0efe9"],
+        "line-opacity": 0.7,
+        "line-dasharray": [2, 2],
+        "line-width": [
+          "interpolate", ["linear"], ["zoom"],
+          12, 0.8,
+          14, ["match", ["get", "rank"], 8, 11, 7, 8.5, 6, 6.5, 5, 5, 4, 3.8, 2, 2.2, 1, 1.5, 1.5],
+          18, ["match", ["get", "rank"], 8, 30, 7, 22, 6, 16, 5, 12, 4, 9, 2, 5.5, 1, 3.5, 3.5]
+        ]
+      }
+    },
+
+    {
+      "id": "nj-road-casing",
+      "type": "line",
+      "source": "navijson-reality",
+      "slot": "middle",
+      "minzoom": 10,
+      "filter": ["all", ["==", ["get", "feature_type"], "road"], ["<=", ["get", "layer"], 0], ["!", ["get", "bridge"]], ["!", ["get", "tunnel"]]],
+      "layout": { "line-cap": "round", "line-join": "round" },
+      "paint": {
+        "line-color": ["case", [">=", ["get", "rank"], 7], "#f4d67c", "#d2d3ce"],
+        "line-width": [
+          "interpolate", ["linear"], ["zoom"],
+          10, ["match", ["get", "rank"], 8, 4.5, 7, 3.8, 6, 3, 5, 2.5, 4, 2, 2, 1.4, 1, 1, 1],
+          14, ["match", ["get", "rank"], 8, 14, 7, 11, 6, 9, 5, 7, 4, 5.5, 2, 3.6, 1, 2.6, 2.6],
+          18, ["match", ["get", "rank"], 8, 36, 7, 27, 6, 20, 5, 15, 4, 12, 2, 8, 1, 5.5, 5.5]
+        ]
+      }
+    },
+    {
+      "id": "nj-road-fill",
+      "type": "line",
+      "source": "navijson-reality",
+      "slot": "middle",
+      "minzoom": 10,
+      "filter": ["all", ["==", ["get", "feature_type"], "road"], ["<=", ["get", "layer"], 0], ["!", ["get", "bridge"]], ["!", ["get", "tunnel"]]],
+      "layout": { "line-cap": "round", "line-join": "round" },
+      "paint": {
+        "line-color": ["case", [">=", ["get", "rank"], 7], "#fff0b8", "#ffffff"],
+        "line-width": [
+          "interpolate", ["linear"], ["zoom"],
+          10, ["match", ["get", "rank"], 8, 3, 7, 2.5, 6, 2, 5, 1.6, 4, 1.3, 2, 0.7, 1, 0.4, 0.4],
+          14, ["match", ["get", "rank"], 8, 11, 7, 8.5, 6, 6.5, 5, 5, 4, 3.8, 2, 2.2, 1, 1.5, 1.5],
+          18, ["match", ["get", "rank"], 8, 30, 7, 22, 6, 16, 5, 12, 4, 9, 2, 5.5, 1, 3.5, 3.5]
+        ]
+      }
+    },
+
+    {
+      "id": "nj-rail-casing",
+      "type": "line",
+      "source": "navijson-reality",
+      "slot": "middle",
+      "minzoom": 12,
+      "filter": ["==", ["get", "feature_type"], "rail"],
+      "layout": { "line-cap": "round", "line-join": "round" },
+      "paint": {
+        "line-color": ["match", ["get", "nj_class"], "light_rail", "#9a9fb0", "tram", "#9a9fb0", "#8f8f8a"],
+        "line-width": ["interpolate", ["linear"], ["zoom"], 12, 1.5, 18, 5]
+      }
+    },
+    {
+      "id": "nj-rail-ties",
+      "type": "line",
+      "source": "navijson-reality",
+      "slot": "middle",
+      "minzoom": 13,
+      "filter": ["==", ["get", "feature_type"], "rail"],
+      "layout": { "line-cap": "butt", "line-join": "round" },
+      "paint": {
+        "line-color": "#ffffff",
+        "line-opacity": 0.9,
+        "line-dasharray": [1, 2.5],
+        "line-width": ["interpolate", ["linear"], ["zoom"], 13, 1, 18, 3.5]
+      }
+    },
+
+    {
+      "id": "nj-road-bridge-shadow",
+      "type": "line",
+      "source": "navijson-reality",
+      "slot": "middle",
+      "minzoom": 12,
+      "filter": ["all", ["==", ["get", "feature_type"], "road"], ["any", ["==", ["get", "bridge"], true], [">", ["get", "layer"], 0]]],
+      "layout": { "line-cap": "butt", "line-join": "round" },
+      "paint": {
+        "line-color": "rgba(40,44,48,0.28)",
+        "line-width": [
+          "interpolate", ["linear"], ["zoom"],
+          12, 3,
+          14, ["match", ["get", "rank"], 8, 20, 7, 16, 6, 13, 5, 10.5, 4, 8.5, 2, 6, 1, 4.6, 4.6],
+          18, ["match", ["get", "rank"], 8, 44, 7, 34, 6, 26, 5, 20, 4, 16, 2, 11, 1, 8, 8]
+        ]
+      }
+    },
+    {
+      "id": "nj-road-bridge-casing",
+      "type": "line",
+      "source": "navijson-reality",
+      "slot": "middle",
+      "minzoom": 12,
+      "filter": ["all", ["==", ["get", "feature_type"], "road"], ["any", ["==", ["get", "bridge"], true], [">", ["get", "layer"], 0]]],
+      "layout": { "line-cap": "round", "line-join": "round" },
+      "paint": {
+        "line-color": ["case", [">=", ["get", "rank"], 7], "#f4d67c", "#d2d3ce"],
+        "line-width": [
+          "interpolate", ["linear"], ["zoom"],
+          12, 2,
+          14, ["match", ["get", "rank"], 8, 14, 7, 11, 6, 9, 5, 7, 4, 5.5, 2, 3.6, 1, 2.6, 2.6],
+          18, ["match", ["get", "rank"], 8, 36, 7, 27, 6, 20, 5, 15, 4, 12, 2, 8, 1, 5.5, 5.5]
+        ]
+      }
+    },
+    {
+      "id": "nj-road-bridge-fill",
+      "type": "line",
+      "source": "navijson-reality",
+      "slot": "middle",
+      "minzoom": 12,
+      "filter": ["all", ["==", ["get", "feature_type"], "road"], ["any", ["==", ["get", "bridge"], true], [">", ["get", "layer"], 0]]],
+      "layout": { "line-cap": "round", "line-join": "round" },
+      "paint": {
+        "line-color": ["case", [">=", ["get", "rank"], 7], "#fff0b8", "#ffffff"],
+        "line-width": [
+          "interpolate", ["linear"], ["zoom"],
+          12, 1,
+          14, ["match", ["get", "rank"], 8, 11, 7, 8.5, 6, 6.5, 5, 5, 4, 3.8, 2, 2.2, 1, 1.5, 1.5],
+          18, ["match", ["get", "rank"], 8, 30, 7, 22, 6, 16, 5, 12, 4, 9, 2, 5.5, 1, 3.5, 3.5]
+        ]
+      }
+    },
+
+    {
+      "id": "nj-lane-centerline",
+      "type": "line",
+      "source": "navijson-reality",
+      "slot": "middle",
+      "minzoom": 15,
+      "filter": ["all", ["==", ["get", "feature_type"], "lane_divider"], ["==", ["get", "nj_class"], "centerline"]],
+      "layout": { "line-cap": "butt", "line-join": "round" },
+      "paint": {
+        "line-color": "#f2c14e",
+        "line-opacity": 0.95,
+        "line-width": ["interpolate", ["linear"], ["zoom"], 15, 1, 17, 1.4, 20, 2.4]
+      }
+    },
+    {
+      "id": "nj-lane-line",
+      "type": "line",
+      "source": "navijson-reality",
+      "slot": "middle",
+      "minzoom": 15,
+      "filter": ["all", ["==", ["get", "feature_type"], "lane_divider"], ["==", ["get", "nj_class"], "lane_line"]],
+      "layout": { "line-cap": "butt", "line-join": "round" },
+      "paint": {
+        "line-color": "#ffffff",
+        "line-opacity": 0.85,
+        "line-dasharray": [3, 4],
+        "line-width": ["interpolate", ["linear"], ["zoom"], 15, 0.8, 17, 1, 20, 1.8]
+      }
+    },
+
+    {
+      "id": "nj-sidewalks",
+      "type": "line",
+      "source": "navijson-reality",
+      "slot": "middle",
+      "minzoom": 15,
+      "filter": ["==", ["get", "feature_type"], "sidewalk"],
+      "layout": { "line-cap": "round", "line-join": "round" },
+      "paint": {
+        "line-color": "#cbc9c0",
+        "line-opacity": 0.85,
+        "line-width": ["interpolate", ["linear"], ["zoom"], 15, 0.6, 18, 2]
+      }
+    },
+    {
+      "id": "nj-paths",
+      "type": "line",
+      "source": "navijson-reality",
+      "slot": "middle",
+      "minzoom": 15,
+      "filter": ["==", ["get", "feature_type"], "path"],
+      "layout": { "line-cap": "butt", "line-join": "round" },
+      "paint": {
+        "line-color": "#b6b1a6",
+        "line-opacity": 0.85,
+        "line-dasharray": [2, 2],
+        "line-width": ["interpolate", ["linear"], ["zoom"], 15, 0.7, 18, 2]
+      }
+    },
+    {
+      "id": "nj-cycleways",
+      "type": "line",
+      "source": "navijson-reality",
+      "slot": "middle",
+      "minzoom": 14,
+      "filter": ["==", ["get", "feature_type"], "cycleway"],
+      "layout": { "line-cap": "round", "line-join": "round" },
+      "paint": {
+        "line-color": "#5bb99a",
+        "line-opacity": 0.8,
+        "line-dasharray": [3, 2],
+        "line-width": ["interpolate", ["linear"], ["zoom"], 14, 0.8, 18, 2.4]
+      }
+    },
+    {
+      "id": "nj-crosswalks",
+      "type": "line",
+      "source": "navijson-reality",
+      "slot": "middle",
+      "minzoom": 16,
+      "filter": ["==", ["get", "feature_type"], "crosswalk"],
+      "layout": { "line-cap": "butt" },
+      "paint": {
+        "line-color": "#7d8181",
+        "line-width": 5,
+        "line-dasharray": [0.4, 0.7],
+        "line-opacity": 0.82
+      }
+    },
+
     {
       "id": "nj-buildings-3d",
       "type": "fill-extrusion",
@@ -62,84 +373,115 @@
         "fill-extrusion-vertical-gradient": true
       }
     },
+
     {
-      "id": "nj-road-refinement-casing",
-      "type": "line",
-      "source": "navijson-reality",
-      "slot": "middle",
-      "minzoom": 14,
-      "filter": ["in", ["get", "feature_type"], ["literal", ["motorway", "primary", "street"]]],
-      "layout": { "line-cap": "round", "line-join": "round" },
-      "paint": {
-        "line-color": ["match", ["get", "feature_type"], "motorway", "#dfc574", "#d2d3ce"],
-        "line-width": ["interpolate", ["linear"], ["zoom"], 14, 2, 17, ["match", ["get", "feature_type"], "motorway", 20, "primary", 13, 8]]
-      }
-    },
-    {
-      "id": "nj-road-refinement-fill",
-      "type": "line",
-      "source": "navijson-reality",
-      "slot": "middle",
-      "minzoom": 14,
-      "filter": ["in", ["get", "feature_type"], ["literal", ["motorway", "primary", "street"]]],
-      "layout": { "line-cap": "round", "line-join": "round" },
-      "paint": {
-        "line-color": ["match", ["get", "feature_type"], "motorway", "#fff1b6", "#ffffff"],
-        "line-width": ["interpolate", ["linear"], ["zoom"], 14, 1, 17, ["match", ["get", "feature_type"], "motorway", 14, "primary", 9, 5.5]]
-      }
-    },
-    {
-      "id": "nj-lane-dividers",
-      "type": "line",
+      "id": "nj-crossings",
+      "type": "circle",
       "source": "navijson-reality",
       "slot": "top",
       "minzoom": 16,
-      "filter": ["all", ["==", ["get", "feature_type"], "lane_divider"], [">=", ["get", "confidence"], 0.85]],
-      "layout": { "line-cap": "round" },
-      "paint": { "line-color": "#a6a498", "line-width": 1.2, "line-dasharray": [3, 4], "line-opacity": 0.75 }
+      "filter": ["==", ["get", "feature_type"], "crossing"],
+      "paint": {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 16, 1.6, 19, 3.2],
+        "circle-color": "#8b8f8c",
+        "circle-opacity": 0.55
+      }
     },
     {
-      "id": "nj-crosswalks",
-      "type": "line",
+      "id": "nj-street-lamps",
+      "type": "circle",
       "source": "navijson-reality",
       "slot": "top",
       "minzoom": 16,
-      "filter": ["==", ["get", "feature_type"], "crosswalk"],
-      "paint": { "line-color": "#7d8181", "line-width": 5, "line-dasharray": [0.4, 0.7], "line-opacity": 0.82 }
+      "filter": ["==", ["get", "feature_type"], "street_lamp"],
+      "paint": {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 16, 1.4, 19, 2.6],
+        "circle-color": "#f2cf6b",
+        "circle-stroke-color": "rgba(120,90,20,0.35)",
+        "circle-stroke-width": 0.6,
+        "circle-opacity": 0.9
+      }
     },
     {
-      "id": "nj-route-shadow",
-      "type": "line",
+      "id": "nj-traffic-signs",
+      "type": "circle",
       "source": "navijson-reality",
-      "minzoom": 10,
-      "filter": ["==", ["get", "feature_type"], "route"],
-      "layout": { "line-cap": "round", "line-join": "round" },
-      "paint": { "line-color": "rgba(255,255,255,0.94)", "line-width": ["interpolate", ["linear"], ["zoom"], 10, 5, 18, 13] }
+      "slot": "top",
+      "minzoom": 16,
+      "filter": ["==", ["get", "feature_type"], "traffic_sign"],
+      "paint": {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 16, 2.2, 19, 4],
+        "circle-color": "#f0a92b",
+        "circle-stroke-color": "#ffffff",
+        "circle-stroke-width": 1
+      }
     },
     {
-      "id": "nj-route",
-      "type": "line",
+      "id": "nj-stop-signs",
+      "type": "circle",
       "source": "navijson-reality",
-      "minzoom": 10,
-      "filter": ["==", ["get", "feature_type"], "route"],
-      "layout": { "line-cap": "round", "line-join": "round" },
-      "paint": { "line-color": "#1677ff", "line-width": ["interpolate", ["linear"], ["zoom"], 10, 3, 18, 8.5] }
+      "slot": "top",
+      "minzoom": 16,
+      "filter": ["==", ["get", "feature_type"], "stop_sign"],
+      "paint": {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 16, 2.4, 19, 4.4],
+        "circle-color": "#d0392b",
+        "circle-stroke-color": "#ffffff",
+        "circle-stroke-width": 1.1
+      }
     },
     {
       "id": "nj-signals-halo",
       "type": "circle",
       "source": "navijson-reality",
-      "minzoom": 16,
+      "slot": "top",
+      "minzoom": 15,
       "filter": ["==", ["get", "feature_type"], "signal"],
-      "paint": { "circle-radius": 6, "circle-color": "#ffffff", "circle-stroke-color": "rgba(25,38,43,0.2)", "circle-stroke-width": 1 }
+      "paint": {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 15, 4, 19, 7],
+        "circle-color": "#ffffff",
+        "circle-stroke-color": "rgba(25,38,43,0.2)",
+        "circle-stroke-width": 1
+      }
     },
     {
       "id": "nj-signals",
       "type": "circle",
       "source": "navijson-reality",
-      "minzoom": 16,
+      "slot": "top",
+      "minzoom": 15,
       "filter": ["==", ["get", "feature_type"], "signal"],
-      "paint": { "circle-radius": 3, "circle-color": "#1ea66c" }
+      "paint": {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 15, 2, 19, 3.6],
+        "circle-color": "#1ea66c"
+      }
+    },
+
+    {
+      "id": "nj-route-shadow",
+      "type": "line",
+      "source": "navijson-reality",
+      "slot": "top",
+      "minzoom": 10,
+      "filter": ["==", ["get", "feature_type"], "route"],
+      "layout": { "line-cap": "round", "line-join": "round" },
+      "paint": {
+        "line-color": "rgba(255,255,255,0.94)",
+        "line-width": ["interpolate", ["linear"], ["zoom"], 10, 5, 18, 13]
+      }
+    },
+    {
+      "id": "nj-route",
+      "type": "line",
+      "source": "navijson-reality",
+      "slot": "top",
+      "minzoom": 10,
+      "filter": ["==", ["get", "feature_type"], "route"],
+      "layout": { "line-cap": "round", "line-join": "round" },
+      "paint": {
+        "line-color": "#1677ff",
+        "line-width": ["interpolate", ["linear"], ["zoom"], 10, 3, 18, 8.5]
+      }
     }
   ]
 }

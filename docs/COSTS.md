@@ -1,6 +1,10 @@
 # Cost boundary
 
-The checked-in California Light preview has no required paid service. It uses the local GeoJSON fixture and browser canvas rendering by default.
+The checked-in California Light preview has no required paid service. It uses the local OpenStreetMap-derived Reality Layer GeoJSON and browser canvas rendering by default.
+
+## Reality Layer generation
+
+Building the committed sample regions with `scripts/pipeline/build-region.mjs` uses the **free public Overpass API** for OpenStreetMap data — no key or paid quota is required for these small extracts (be a considerate client and respect Overpass rate limits). Statewide California is not built from Overpass: it is processed **offline** from a downloaded Geofabrik California `.osm.pbf` extract and turned into vector tiles with tippecanoe, so the only costs there are local compute and, if published, tile hosting and delivery.
 
 ## Optional services
 
