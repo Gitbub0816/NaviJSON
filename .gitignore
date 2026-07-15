@@ -37,6 +37,7 @@ yarn-error.log*
 /scripts/pipeline/out/
 # statewide tileset build (PBF download + multi-GB intermediates + PMTiles artifact)
 /scripts/pipeline/statewide-build/
+/scripts/pipeline/sample-build/
 tsconfig.tsbuildinfo
 
 # vercel
