@@ -1,0 +1,25 @@
+{
+  "description": "NaviJSON California enrichment regions. `statewide` is the full-state bounding box used for large tiled runs (do not commit its raw output); `committed` regions are small, representative extracts generated and checked in as the demonstration Reality Layer.",
+  "license": "OpenStreetMap contributors, ODbL",
+  "statewide": {
+    "id": "california",
+    "name": "State of California",
+    "bbox": { "west": -124.48, "south": 32.53, "east": -114.13, "north": 42.01 },
+    "note": "Whole-state extent. Generate via a downloaded Geofabrik California PBF + tippecanoe rather than a live Overpass call. See docs/A_M_LIGHT.md."
+  },
+  "committed": [
+    {
+      "id": "san-jose-downtown",
+      "name": "Downtown San José",
+      "bbox": { "west": -121.9012, "south": 37.3268, "east": -121.8788, "north": 37.3446 },
+      "center": [-121.8906, 37.3374]
+    },
+    {
+      "id": "guadalupe-i280-87-interchange",
+      "name": "I-280 / CA-87 Interchange, San José",
+      "bbox": { "west": -121.9008, "south": 37.3178, "east": -121.8792, "north": 37.3306 },
+      "center": [-121.8894, 37.3242],
+      "note": "Freeway interchange chosen to exercise bridge/tunnel/layer grade separation (overpasses and underpasses)."
+    }
+  ]
+}
