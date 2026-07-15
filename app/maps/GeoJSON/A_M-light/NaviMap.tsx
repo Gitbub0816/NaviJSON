@@ -30,6 +30,10 @@ type LightPreset = "day" | "dawn" | "dusk";
 type MapboxMap = import("mapbox-gl").Map;
 
 const DATA_URL = "/maps/GeoJSON/A_M-light/features.geojson";
+// In production the full Reality Layer is served from object storage (R2/S3),
+// not bundled as a Cloudflare static asset (25 MiB/file limit). Point
+// NEXT_PUBLIC_FEATURES_URL at that URL; falls back to the local asset in dev.
+const FEATURES_URL = process.env.NEXT_PUBLIC_FEATURES_URL || DATA_URL;
 
 // Fallback bounds (metadata `navijson:bbox`) if the collection carries no coords.
 const FALLBACK_BOUNDS = {
@@ -451,7 +455,7 @@ function CanvasMap({ preset, onZoom }: { preset: LightPreset; onZoom: (delta: nu
 
   useEffect(() => {
     let active = true;
-    fetch(DATA_URL)
+    fetch(FEATURES_URL)
       .then((response) => response.json())
       .then((data: FeatureCollection) => {
         if (!active) return;
@@ -746,6 +750,19 @@ export function NaviMap({ mapboxToken, tilesetUrl = "" }: { mapboxToken: string;
         } catch (error) {
           console.error("NaviJSON: statewide tileset style failed to load; using sample.", error);
         }
+      } else if (FEATURES_URL !== DATA_URL) {
+        // Sample data served from R2/S3 (not bundled) — rewrite the style's
+        // GeoJSON source to the external URL.
+        try {
+          const response = await fetch("/maps/GeoJSON/A_M-light/style.json");
+          const sampleStyle = (await response.json()) as {
+            sources: Record<string, { data?: string }>;
+          };
+          sampleStyle.sources["navijson-reality"].data = FEATURES_URL;
+          style = sampleStyle;
+        } catch (error) {
+          console.error("NaviJSON: could not load style for external features URL.", error);
+        }
       }
       if (!active || !mapNodeRef.current) return;
 
@@ -779,7 +796,7 @@ export function NaviMap({ mapboxToken, tilesetUrl = "" }: { mapboxToken: string;
   useEffect(() => {
     if (!mapboxToken) return;
     let active = true;
-    fetch(DATA_URL)
+    fetch(FEATURES_URL)
       .then((r) => r.json())
       .then((data) => {
         if (!active) return;
