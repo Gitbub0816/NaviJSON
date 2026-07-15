@@ -58,28 +58,45 @@ and rerun (the script re-downloads it).
 1. **Upload the MBTiles.** Mapbox Studio → *Tilesets* → *New tileset* → upload
    `california.mbtiles` (or use the Uploads API). You get a tileset id like
    `mapbox://YOURNAME.california`, source-layer **`reality`**.
-2. **Point the style at it.** Regenerate the ready-made variant with your id:
+2. **Point the app at it.** The map auto-selects the statewide style variant
+   when a tileset URL is configured — set both env vars and the app injects the
+   URL into `style-statewide.json` at runtime (no file edit needed):
+   ```bash
+   # .env.local
+   NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=pk.your_public_token
+   NEXT_PUBLIC_NAVIJSON_TILESET=mapbox://YOURNAME.california
+   ```
+   The status pill then reads **“Statewide tileset”** and all 29 NaviJSON layers
+   (road paint included) render from the tiles. To bake a specific id into the
+   committed variant instead, regenerate it:
    ```bash
    node scripts/pipeline/make-statewide-style.mjs mapbox://YOURNAME.california
    ```
-   This writes `public/maps/GeoJSON/A_M-light/style-statewide.json` — the same
-   29-layer stack (road paint included), just sourced from the tileset. Load it
-   with `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN` set.
 
 ## Or serve it as PMTiles (no Mapbox hosting)
 
-Host `california.pmtiles` on any static bucket (Cloudflare R2, S3) and register
-the protocol — works in Mapbox GL JS v3 and MapLibre:
-
-```js
-import { Protocol } from "pmtiles";
-mapboxgl.addProtocol("pmtiles", new Protocol().tile);
-```
+Host `california.pmtiles` on any static bucket (Cloudflare R2, S3). The app
+registers the `pmtiles` protocol automatically when the tileset URL starts with
+`pmtiles://` (via the bundled `pmtiles` package), so you only set the env var:
 
 ```bash
-node scripts/pipeline/make-statewide-style.mjs \
-  "pmtiles://https://your-bucket.r2.dev/california.pmtiles"
+# .env.local
+NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=pk.your_public_token
+NEXT_PUBLIC_NAVIJSON_TILESET=pmtiles://https://your-bucket.r2.dev/california.pmtiles
 ```
 
-Everything downstream (the 29 NaviJSON layers, filters, and road-paint styling)
-is identical; only the source URL changes.
+An R2 bucket **`navijson-tiles`** is already provisioned for this. Upload and
+enable public access with your own credentials (this session cannot push the
+object — it has no R2 keys):
+
+```bash
+wrangler login
+wrangler r2 object put navijson-tiles/california.pmtiles \
+  --file scripts/pipeline/statewide-build/california.pmtiles --remote
+# then enable public access (Dashboard → R2 → navijson-tiles → Settings → Public access,
+# or attach a custom domain) so PMTiles range requests resolve.
+```
+
+R2 public buckets serve HTTP range requests, which PMTiles requires. Everything
+downstream (the 29 NaviJSON layers, filters, and road-paint styling) is
+identical; only the source URL changes.

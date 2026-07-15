@@ -8,5 +8,10 @@ export const metadata: Metadata = {
 };
 
 export default function CaliforniaLightPage() {
-  return <NaviMap mapboxToken={process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? ""} />;
+  return (
+    <NaviMap
+      mapboxToken={process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? ""}
+      tilesetUrl={process.env.NEXT_PUBLIC_NAVIJSON_TILESET ?? ""}
+    />
+  );
 }

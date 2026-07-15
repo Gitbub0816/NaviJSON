@@ -503,26 +503,56 @@ function CanvasMap({ preset, onZoom }: { preset: LightPreset; onZoom: (delta: nu
   );
 }
 
-export function NaviMap({ mapboxToken }: { mapboxToken: string }) {
+export function NaviMap({ mapboxToken, tilesetUrl = "" }: { mapboxToken: string; tilesetUrl?: string }) {
   const mapNodeRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapboxMap | null>(null);
   const [preset, setPreset] = useState<LightPreset>("day");
   const [mapReady, setMapReady] = useState(false);
   const [detailOpen, setDetailOpen] = useState(true);
   const [, setZoomPulse] = useState(0);
+  const statewide = Boolean(tilesetUrl);
 
   useEffect(() => {
     if (!mapboxToken || !mapNodeRef.current) return;
     let active = true;
 
-    import("mapbox-gl").then(({ default: mapboxgl }) => {
+    (async () => {
+      const { default: mapboxgl } = await import("mapbox-gl");
       if (!active || !mapNodeRef.current) return;
       mapboxgl.accessToken = mapboxToken;
+
+      // Default: render the committed GeoJSON sample. When a statewide tileset
+      // is configured, load the vector-tile style variant and point its source
+      // at the tileset (a Mapbox-hosted `mapbox://user.id` tileset, a TileJSON
+      // URL, or a `pmtiles://…` URL served from R2/S3).
+      let style: string | object = "/maps/GeoJSON/A_M-light/style.json";
+      let initialZoom = 14.7;
+      if (tilesetUrl) {
+        try {
+          if (tilesetUrl.startsWith("pmtiles://")) {
+            const { Protocol } = await import("pmtiles");
+            const protocol = new Protocol();
+            // pmtiles ships a MapLibre/Mapbox-compatible protocol handler.
+            mapboxgl.addProtocol("pmtiles", protocol.tile as never);
+          }
+          const response = await fetch("/maps/GeoJSON/A_M-light/style-statewide.json");
+          const statewideStyle = (await response.json()) as {
+            sources: Record<string, { url?: string }>;
+          };
+          statewideStyle.sources["navijson-reality"].url = tilesetUrl;
+          style = statewideStyle;
+          initialZoom = 9;
+        } catch (error) {
+          console.error("NaviJSON: statewide tileset style failed to load; using sample.", error);
+        }
+      }
+      if (!active || !mapNodeRef.current) return;
+
       const map = new mapboxgl.Map({
         container: mapNodeRef.current,
-        style: "/maps/GeoJSON/A_M-light/style.json",
+        style: style as never,
         center: [-121.8906, 37.3374],
-        zoom: 14.7,
+        zoom: initialZoom,
         pitch: 44,
         bearing: -18,
         antialias: true,
@@ -532,14 +562,14 @@ export function NaviMap({ mapboxToken }: { mapboxToken: string }) {
       map.addControl(new mapboxgl.AttributionControl({ compact: true }), "bottom-right");
       map.once("load", () => setMapReady(true));
       mapRef.current = map;
-    });
+    })();
 
     return () => {
       active = false;
       mapRef.current?.remove();
       mapRef.current = null;
     };
-  }, [mapboxToken]);
+  }, [mapboxToken, tilesetUrl]);
 
   const selectPreset = (nextPreset: LightPreset) => {
     setPreset(nextPreset);
@@ -575,7 +605,7 @@ export function NaviMap({ mapboxToken }: { mapboxToken: string }) {
 
         <div className={styles.statusPill}>
           <span className={styles.statusDot} />
-          {mapboxToken ? "Mapbox live" : "No-key preview"}
+          {statewide ? "Statewide tileset" : mapboxToken ? "Mapbox live" : "No-key preview"}
         </div>
       </header>
 
