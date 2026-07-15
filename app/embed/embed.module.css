@@ -1,0 +1,12 @@
+/* Chromeless, full-iframe wrapper for the embeddable NaviJSON map.
+   Fills the iframe viewport with no margin so the host page controls sizing. */
+.frame {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100svh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #eef0eb;
+}

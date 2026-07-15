@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NaviJSON SDK — Example</title>
+    <style>
+      body {
+        margin: 0;
+        font-family:
+          system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
+          sans-serif;
+        color: #1c2430;
+        background: #f6f7f4;
+      }
+      main {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 32px 20px 56px;
+      }
+      h1 {
+        font-size: 22px;
+        margin: 0 0 4px;
+      }
+      p {
+        color: #4a5563;
+        line-height: 1.5;
+      }
+      code {
+        background: #e9ebe5;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 0.92em;
+      }
+      /* The container the SDK mounts its iframe into. */
+      #map {
+        width: 100%;
+        height: 480px;
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 8px 30px rgba(20, 30, 40, 0.14);
+        background: #eef0eb;
+      }
+      footer {
+        margin-top: 20px;
+        font-size: 13px;
+        color: #6b7280;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>NaviJSON SDK — embeddable map</h1>
+      <p>
+        This page loads <code>/sdk/navijson.js</code> and mounts a NaviJSON map
+        into the box below. Paste a real Mapbox public token
+        (<code>pk.…</code>) into the <code>token</code> option to get the live
+        Mapbox map with tap-to-route, drive simulation, and voice guidance.
+        Without a token, the keyless canvas preview renders instead.
+      </p>
+
+      <!-- The mount target. Size it however you like — the iframe fills it. -->
+      <div id="map"></div>
+
+      <footer>Map data © OpenStreetMap contributors (ODbL).</footer>
+    </main>
+
+    <!-- Load the SDK (served from the same NaviJSON origin as this file). -->
+    <script src="/sdk/navijson.js"></script>
+    <script>
+      // Replace "pk.YOUR_TOKEN" with a real Mapbox public token to go live.
+      // You can also pass { tileset: "mapbox://you.california" } for the
+      // statewide tileset, and { apiKey: "..." } for your NaviJSON key.
+      var controller = NaviJSON.mount("#map", {
+        token: "pk.YOUR_TOKEN",
+      });
+
+      // The embed posts a "ready" event once it has mounted inside the iframe.
+      controller.on("ready", function () {
+        console.log("NaviJSON embed ready (v" + NaviJSON.version + ")");
+      });
+
+      // Future events (emitted as the map gains hooks): "route", "arrive".
+      controller.on("route", function (payload) {
+        console.log("route computed", payload);
+      });
+
+      // To remove the map later: controller.destroy();
+    </script>
+  </body>
+</html>
