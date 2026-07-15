@@ -54,7 +54,7 @@
           }
         }
       }
-    } catch (e) {
+    } catch {
       /* fall through to location.origin */
     }
     return typeof location !== "undefined" ? location.origin : "";
@@ -150,7 +150,7 @@
       cbs.slice().forEach(function (cb) {
         try {
           cb(data.payload, data);
-        } catch (e) {
+        } catch {
           /* a listener throwing must not break the bridge */
         }
       });
